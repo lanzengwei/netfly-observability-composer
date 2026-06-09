@@ -1,0 +1,62 @@
+{
+  "name": "netfly/observability",
+  "description": "Hyperf observability package with Prometheus metrics and Loki structured logs.",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Netfly\\Observability\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Netfly\\Observability\\Tests\\": "tests/"
+    },
+    "files": [
+      "tests/bootstrap.php"
+    ]
+  },
+  "require": {
+    "php": "^8.1",
+    "ext-json": "*",
+    "hyperf/contract": "^3.1",
+    "hyperf/context": "^3.1",
+    "hyperf/di": "^3.1",
+    "hyperf/http-server": "^3.1",
+    "hyperf/logger": "^3.1",
+    "hyperf/utils": "^3.1",
+    "psr/http-message": "^1.0|^2.0",
+    "psr/http-server-middleware": "^1.0",
+    "psr/log": "^2.0|^3.0"
+  },
+  "require-dev": {
+    "guzzlehttp/psr7": "^2.7",
+    "mockery/mockery": "^1.6",
+    "phpstan/phpstan": "^1.12",
+    "phpunit/phpunit": "^9.6"
+  },
+  "extra": {
+    "hyperf": {
+      "config": "Netfly\\Observability\\ConfigProvider"
+    }
+  },
+  "scripts": {
+    "test": "phpunit --colors=always",
+    "analyse": "phpstan analyse --memory-limit=512M",
+    "check": [
+      "@test",
+      "@analyse"
+    ]
+  },
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.1.0"
+    },
+    "allow-plugins": {
+      "hyperf/plugin": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
