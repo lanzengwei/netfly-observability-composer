@@ -9,6 +9,7 @@ use Netfly\Observability\Collector\HttpCollector;
 use Netfly\Observability\Collector\MysqlCollector;
 use Netfly\Observability\Collector\RabbitMqCollector;
 use Netfly\Observability\Collector\RedisCollector;
+use Netfly\Observability\Collector\RuntimeCollector;
 use Netfly\Observability\Config\ObservabilityConfig;
 use Netfly\Observability\Context\TraceContext;
 use Netfly\Observability\Logging\JsonLogFormatter;
@@ -30,6 +31,7 @@ final class TrafficService
         private readonly MysqlCollector $mysql,
         private readonly RedisCollector $redis,
         private readonly RabbitMqCollector $rabbitmq,
+        private readonly RuntimeCollector $runtime,
         private readonly PrometheusRenderer $renderer,
         private readonly TraceIdGenerator $traceIdGenerator
     ) {
@@ -64,6 +66,7 @@ final class TrafficService
             new MysqlCollector($config, $metrics, $logger, $traceContext),
             new RedisCollector($config, $metrics, $logger, $traceContext),
             new RabbitMqCollector($config, $metrics, $logger, $traceContext),
+            new RuntimeCollector($config, $metrics),
             new PrometheusRenderer(),
             new TraceIdGenerator()
         );
@@ -73,6 +76,7 @@ final class TrafficService
     {
         $traceId = $this->traceIdGenerator->generate();
         $this->traceContext->setTraceId($traceId);
+        $this->runtime->collect();
 
         $route = $this->pick(['/demo/orders', '/demo/cache', '/demo/publish', '/demo/slow']);
         $duration = random_int(20, 220) / 1000;

@@ -24,9 +24,12 @@ final class RuntimeCollector
         $this->metrics->gauge('netfly_php_memory_usage_bytes', [], memory_get_usage(true));
         $this->metrics->gauge('netfly_php_memory_peak_bytes', [], memory_get_peak_usage(true));
 
+        $coroutineNum = 0;
         if (class_exists('Swoole\\Coroutine')) {
             $stats = \Swoole\Coroutine::stats();
-            $this->metrics->gauge('netfly_swoole_coroutine_num', [], (int) ($stats['coroutine_num'] ?? 0));
+            $coroutineNum = (int) ($stats['coroutine_num'] ?? 0);
         }
+
+        $this->metrics->gauge('netfly_swoole_coroutine_num', [], $coroutineNum);
     }
 }

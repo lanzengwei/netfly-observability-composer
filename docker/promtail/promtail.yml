@@ -32,5 +32,3 @@ scrape_configs:
           service:
           level:
           log_type:
-      - output:
-          source: message

@@ -39,6 +39,12 @@ final class JsonLogFormatter
             'context' => $this->sanitizer->sanitize($context),
         ];
 
+        foreach (['duration_ms', 'threshold_ms', 'component', 'operation', 'route', 'status', 'exception_class'] as $field) {
+            if (array_key_exists($field, $context)) {
+                $record[$field] = $context[$field];
+            }
+        }
+
         return json_encode($record, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n";
     }
 }
