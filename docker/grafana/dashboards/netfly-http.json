@@ -1,6 +1,6 @@
 {
-  "uid": "netfly-observability",
-  "title": "Netfly Overview",
+  "uid": "netfly-http",
+  "title": "Netfly HTTP",
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -115,12 +115,12 @@
   },
   "panels": [
     {
-      "id": 1,
-      "title": "Request Rate",
-      "type": "stat",
+      "id": 7,
+      "title": "HTTP Requests By Route And Status",
+      "type": "timeseries",
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -130,8 +130,8 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m]))",
-          "legendFormat": "req/s"
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m])) by (route,status)",
+          "legendFormat": "{{route}} {{status}}"
         }
       ],
       "fieldConfig": {
@@ -139,115 +139,15 @@
           "unit": "reqps"
         },
         "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto"
       }
     },
     {
-      "id": 2,
-      "title": "HTTP Error Rate",
-      "type": "stat",
+      "id": 8,
+      "title": "HTTP Latency P50/P95/P99",
+      "type": "timeseries",
       "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 0
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",status=~\"5..\"}[1m]))",
-          "legendFormat": "5xx/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0.01
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto"
-      }
-    },
-    {
-      "id": 3,
-      "title": "HTTP P95",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 0
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[1m])) by (le))",
-          "legendFormat": "p95"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto"
-      }
-    },
-    {
-      "id": 4,
-      "title": "DB Query Rate",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 8,
+        "w": 12,
         "x": 12,
         "y": 0
       },
@@ -257,100 +157,112 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(netfly_db_queries_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m]))",
-          "legendFormat": "queries/s"
+          "expr": "histogram_quantile(0.50, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m])) by (le,route))",
+          "legendFormat": "p50 {{route}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m])) by (le,route))",
+          "legendFormat": "p95 {{route}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m])) by (le,route))",
+          "legendFormat": "p99 {{route}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "title": "HTTP Status Distribution",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
         },
         "overrides": []
       },
       "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "orientation": "auto"
+        }
       }
     },
     {
-      "id": 5,
-      "title": "Redis Command Rate",
-      "type": "stat",
+      "id": 10,
+      "title": "Top HTTP Routes",
+      "type": "table",
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "topk(10, sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[5m])) by (route,status))",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Slow HTTP Logs",
+      "type": "logs",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
         "x": 16,
-        "y": 0
+        "y": 8
       },
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
+            "type": "loki",
+            "uid": "Loki"
           },
-          "expr": "sum(rate(netfly_redis_commands_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m]))",
-          "legendFormat": "commands/s"
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"slow\"} | json | component=\"http\" | duration_ms > $slow_ms"
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto"
-      }
-    },
-    {
-      "id": 6,
-      "title": "AMQP Throughput",
-      "type": "stat",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "Prometheus"
-          },
-          "expr": "sum(rate(netfly_amqp_publish_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m])) + sum(rate(netfly_amqp_consume_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m]))",
-          "legendFormat": "messages/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto"
-      }
+      ]
     }
   ],
   "links": [

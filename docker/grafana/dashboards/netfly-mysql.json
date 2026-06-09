@@ -1,0 +1,204 @@
+{
+  "uid": "netfly-mysql",
+  "title": "Netfly MySQL",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": [
+    "netfly",
+    "hyperf",
+    "observability",
+    "netfly-split"
+  ],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "query": "label_values(netfly_http_requests_total, project)",
+        "refresh": 2,
+        "current": {
+          "text": "demo-shop",
+          "value": "demo-shop"
+        }
+      },
+      {
+        "name": "env",
+        "label": "Env",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "query": "label_values(netfly_http_requests_total{project=\"$project\"}, env)",
+        "refresh": 2,
+        "current": {
+          "text": "local",
+          "value": "local"
+        }
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\"}, service)",
+        "refresh": 2,
+        "current": {
+          "text": "demo-api",
+          "value": "demo-api"
+        }
+      },
+      {
+        "name": "route",
+        "label": "Route",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}, route)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "log_type",
+        "label": "Log Type",
+        "type": "custom",
+        "query": "request,error,slow,db,redis,amqp,app",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "trace_id",
+        "label": "Trace ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "slow_ms",
+        "label": "Slow >= ms",
+        "type": "textbox",
+        "query": "100",
+        "current": {
+          "text": "100",
+          "value": "100"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 15,
+      "title": "MySQL Query Rate By Operation",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "sum(rate(netfly_db_queries_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m])) by (operation,result)",
+          "legendFormat": "{{operation}} {{result}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 16,
+      "title": "MySQL P95 Query Duration",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum(rate(netfly_db_query_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[1m])) by (le,operation))",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 17,
+      "title": "MySQL Errors And Slow Logs",
+      "type": "logs",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"db|slow\"} | json | component=~\"mysql|\""
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "title": "Netfly dashboards",
+      "type": "dashboards",
+      "tags": [
+        "netfly-split"
+      ],
+      "asDropdown": true,
+      "includeVars": true,
+      "keepTime": true
+    }
+  ]
+}
