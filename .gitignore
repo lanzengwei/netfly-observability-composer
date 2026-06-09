@@ -1,0 +1,14 @@
+.superpowers/
+vendor/
+demo/vendor/
+composer.lock
+demo/composer.lock
+.phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache/
+runtime/
+demo/runtime/
+logs/
+demo/logs/
+.env
+demo/.env
