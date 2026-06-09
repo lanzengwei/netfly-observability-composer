@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Netfly\Observability;
 
 use Netfly\Observability\Collector\HttpCollector;
+use Netfly\Observability\Collector\MysqlCollector;
+use Netfly\Observability\Collector\RabbitMqCollector;
+use Netfly\Observability\Collector\RedisCollector;
 use Netfly\Observability\Collector\RuntimeCollector;
 use Netfly\Observability\Config\ObservabilityConfig;
 use Netfly\Observability\Context\TraceContext;
@@ -35,6 +38,9 @@ final class ConfigProvider
                 MetricsRegistry::class => MetricsRegistry::class,
                 PrometheusRenderer::class => PrometheusRenderer::class,
                 HttpCollector::class => HttpCollector::class,
+                MysqlCollector::class => MysqlCollector::class,
+                RedisCollector::class => RedisCollector::class,
+                RabbitMqCollector::class => RabbitMqCollector::class,
                 RuntimeCollector::class => RuntimeCollector::class,
                 TraceMiddleware::class => TraceMiddleware::class,
                 MetricsController::class => MetricsController::class,
