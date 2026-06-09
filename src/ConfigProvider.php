@@ -55,7 +55,7 @@ final class ConfigProvider
                     'id' => 'observability',
                     'description' => 'Netfly observability config.',
                     'source' => __DIR__ . '/../config/observability.php',
-                    'destination' => BASE_PATH . '/config/autoload/observability.php',
+                    'destination' => (defined('BASE_PATH') ? constant('BASE_PATH') : getcwd()) . '/config/autoload/observability.php',
                 ],
             ],
         ];

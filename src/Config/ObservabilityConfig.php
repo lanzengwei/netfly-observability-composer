@@ -46,7 +46,7 @@ final class ObservabilityConfig
 
     public function logPath(): string
     {
-        return (string) ($this->config['logging']['path'] ?? BASE_PATH . '/runtime/logs/netfly-observability.log');
+        return (string) ($this->config['logging']['path'] ?? $this->basePath() . '/runtime/logs/netfly-observability.log');
     }
 
     public function metricsEnabled(): bool
@@ -97,7 +97,7 @@ final class ObservabilityConfig
             ],
             'logging' => [
                 'enabled' => true,
-                'path' => BASE_PATH . '/runtime/logs/netfly-observability.log',
+                'path' => $this->basePath() . '/runtime/logs/netfly-observability.log',
             ],
             'http' => ['enabled' => true],
             'mysql' => ['enabled' => true],
@@ -117,5 +117,10 @@ final class ObservabilityConfig
         $value = $this->config[$key] ?? $default;
 
         return is_scalar($value) ? (string) $value : $default;
+    }
+
+    private function basePath(): string
+    {
+        return defined('BASE_PATH') ? (string) constant('BASE_PATH') : getcwd();
     }
 }
