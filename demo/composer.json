@@ -1,0 +1,37 @@
+{
+  "name": "netfly/observability-demo",
+  "description": "Demo application for netfly observability package.",
+  "type": "project",
+  "license": "MIT",
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../",
+      "options": {
+        "symlink": true
+      }
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "hyperf/framework": "^3.1",
+    "hyperf/http-server": "^3.1",
+    "hyperf/process": "^3.1",
+    "netfly/observability": "dev-feature/netfly-observability"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "config": {
+    "platform": {
+      "php": "8.1.0"
+    },
+    "allow-plugins": {
+      "hyperf/plugin": true
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

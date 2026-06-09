@@ -1,0 +1,109 @@
+{
+  "uid": "netfly-observability",
+  "title": "Netfly Observability",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["netfly", "hyperf", "observability"],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "Prometheus"},
+        "query": "label_values(netfly_http_requests_total, project)",
+        "current": {"text": "demo-shop", "value": "demo-shop"}
+      },
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "Prometheus"},
+        "query": "label_values(netfly_http_requests_total{project=\"$project\"}, service)",
+        "current": {"text": "demo-api", "value": "demo-api"}
+      },
+      {
+        "name": "trace_id",
+        "type": "textbox",
+        "query": "",
+        "current": {"text": "", "value": ""}
+      },
+      {
+        "name": "log_type",
+        "type": "custom",
+        "query": "request,error,slow,db,redis,amqp,app",
+        "current": {"text": "request", "value": "request"}
+      },
+      {
+        "name": "slow_ms",
+        "type": "textbox",
+        "query": "100",
+        "current": {"text": "100", "value": "100"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP Request Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",service=\"$service\"}[1m])) by (route,status)",
+          "legendFormat": "{{route}} {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "HTTP P95 Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "Prometheus"},
+          "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",service=\"$service\"}[1m])) by (le,route))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Errors",
+      "type": "logs",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "expr": "{project=\"$project\",service=\"$service\",log_type=\"error\"} | json"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Trace Logs",
+      "type": "logs",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "expr": "{project=\"$project\",service=\"$service\"} | json | trace_id=\"$trace_id\""
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Slow Logs",
+      "type": "logs",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "targets": [
+        {
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "expr": "{project=\"$project\",service=\"$service\",log_type=\"slow\"} | json | duration_ms > $slow_ms"
+        }
+      ]
+    }
+  ]
+}
