@@ -97,8 +97,8 @@
         "type": "textbox",
         "query": "",
         "current": {
-          "text": "",
-          "value": ""
+          "text": ".*",
+          "value": ".*"
         }
       },
       {
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[5m])) by (status)",
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[5m])) by (status)",
           "legendFormat": "{{status}}"
         }
       ],
@@ -238,7 +238,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "topk(10, sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[5m])) by (route,status))",
+          "expr": "topk(10, sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[5m])) by (route,status))",
           "format": "table",
           "instant": true
         }
@@ -260,7 +260,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"slow\"} | json | component=\"http\" | duration_ms > $slow_ms"
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | log_type=\"slow\" | component=\"http\" | route=~\"$route\" | trace_id=~\"$trace_id\" | duration_ms > $slow_ms"
         }
       ]
     }

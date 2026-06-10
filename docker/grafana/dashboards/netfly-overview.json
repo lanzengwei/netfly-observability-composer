@@ -97,8 +97,8 @@
         "type": "textbox",
         "query": "",
         "current": {
-          "text": "",
-          "value": ""
+          "text": ".*",
+          "value": ".*"
         }
       },
       {
@@ -130,7 +130,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[1m]))",
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m]))",
           "legendFormat": "req/s"
         }
       ],
@@ -167,7 +167,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",status=~\"5..\"}[1m]))",
+          "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\",status=~\"5..\"}[1m]))",
           "legendFormat": "5xx/s"
         }
       ],
@@ -220,7 +220,7 @@
             "type": "prometheus",
             "uid": "Prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\",route=~\"$route\"}[1m])) by (le))",
           "legendFormat": "p95"
         }
       ],

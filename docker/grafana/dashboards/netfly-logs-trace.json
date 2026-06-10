@@ -97,8 +97,8 @@
         "type": "textbox",
         "query": "",
         "current": {
-          "text": "",
-          "value": ""
+          "text": ".*",
+          "value": ".*"
         }
       },
       {
@@ -130,7 +130,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"error\"} | json"
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | log_type=\"error\" | route=~\"$route\" | trace_id=~\"$trace_id\""
         }
       ]
     },
@@ -150,7 +150,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\"} | json | trace_id=\"$trace_id\""
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | trace_id=~\"$trace_id\" | route=~\"$route\""
         }
       ]
     },
@@ -170,7 +170,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json"
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | route=~\"$route\" | trace_id=~\"$trace_id\" | duration_ms > $slow_ms or log_type != \"slow\""
         }
       ]
     }

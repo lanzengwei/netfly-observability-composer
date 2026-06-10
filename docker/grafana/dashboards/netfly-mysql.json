@@ -97,8 +97,8 @@
         "type": "textbox",
         "query": "",
         "current": {
-          "text": "",
-          "value": ""
+          "text": ".*",
+          "value": ".*"
         }
       },
       {
@@ -184,7 +184,7 @@
             "type": "loki",
             "uid": "Loki"
           },
-          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"db|slow\"} | json | component=~\"mysql|\""
+          "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | component=~\"mysql|\" | trace_id=~\"$trace_id\" | duration_ms > $slow_ms or log_type != \"slow\""
         }
       ]
     }
