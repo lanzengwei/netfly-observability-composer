@@ -24,6 +24,8 @@ scrape_configs:
             service: service
             level: level
             log_type: log_type
+            scenario: scenario
+            component: component
             trace_id: trace_id
             message: message
       - labels:
@@ -32,3 +34,5 @@ scrape_configs:
           service:
           level:
           log_type:
+          scenario:
+          component:

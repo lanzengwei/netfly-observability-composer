@@ -1,0 +1,25 @@
+{
+  "uid": "netfly-request-journey",
+  "title": "Netfly Request Journey",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["netfly", "request-journey"],
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {"list": [
+    {"name": "project", "label": "Project", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total, project)", "refresh": 2, "current": {"text": "demo-shop", "value": "demo-shop"}},
+    {"name": "env", "label": "Env", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\"}, env)", "refresh": 2, "current": {"text": "local", "value": "local"}},
+    {"name": "service", "label": "Service", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\"}, service)", "refresh": 2, "current": {"text": "demo-api", "value": "demo-api"}},
+    {"name": "scenario", "label": "Scenario", "type": "custom", "query": "order_create,order_query,payment_callback,inventory_reserve,mixed_traffic,slow_demo,error_demo,message_consume,demo_home", "includeAll": true, "multi": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "trace_id", "label": "Trace ID", "type": "textbox", "query": "", "current": {"text": ".*", "value": ".*"}},
+    {"name": "slow_ms", "label": "Slow >= ms", "type": "textbox", "query": "100", "current": {"text": "100", "value": "100"}}
+  ]},
+  "panels": [
+    {"id": 1, "title": "HTTP Requests By Scenario", "type": "logs", "gridPos": {"h": 7, "w": 8, "x": 0, "y": 0}, "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"request\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | line_format \"{{.timestamp}} {{.scenario}} {{.method}} {{.route}} {{.status}} {{.duration_ms}}ms trace={{.trace_id}}\""}]},
+    {"id": 2, "title": "Selected Trace Timeline", "type": "logs", "gridPos": {"h": 12, "w": 16, "x": 8, "y": 0}, "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"request|app|db|redis|amqp|slow|error\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | line_format \"{{.span_id}} <- {{.parent_span_id}} [{{.span_kind}}] {{.scenario}} {{.log_type}} {{.component}} {{.operation}} {{.duration_ms}}ms {{.message}}\""}]},
+    {"id": 3, "title": "Slow Operations In Trace", "type": "logs", "gridPos": {"h": 7, "w": 8, "x": 0, "y": 7}, "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"slow\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | duration_ms > $slow_ms | line_format \"{{.scenario}} {{.component}} {{.operation}} {{.duration_ms}}ms trace={{.trace_id}}\""}]},
+    {"id": 4, "title": "Component Calls For Trace", "type": "logs", "gridPos": {"h": 9, "w": 24, "x": 0, "y": 14}, "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"db|redis|amqp\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | line_format \"{{.timestamp}} {{.component}} {{.operation}} mysql_table={{.table}} redis_key={{.cache_key_type}} mq={{.exchange}}/{{.queue}} {{.duration_ms}}ms\""}]}
+  ],
+  "links": [{"title": "Netfly dashboards", "type": "dashboards", "tags": ["request-journey"], "asDropdown": true, "includeVars": true, "keepTime": true}]
+}

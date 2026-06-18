@@ -44,4 +44,28 @@ final class JsonLogFormatterTest extends TestCase
         self::assertSame(100, $data['threshold_ms']);
         self::assertSame('RuntimeException', $data['exception_class']);
     }
+
+    public function test_promotes_scenario_and_component_drilldown_fields(): void
+    {
+        $formatter = new JsonLogFormatter(['project' => 'shop', 'env' => 'local', 'service' => 'api']);
+
+        $json = $formatter->format('info', 'db', 'mysql insert success', 'trace-1', [
+            'scenario' => 'order_create',
+            'table' => 'orders',
+            'cache_key_type' => 'order_detail',
+            'exchange' => 'orders',
+            'queue' => 'order.created',
+            'routing_key' => 'order.created',
+            'method' => 'POST',
+        ]);
+        $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertSame('order_create', $data['scenario']);
+        self::assertSame('orders', $data['table']);
+        self::assertSame('order_detail', $data['cache_key_type']);
+        self::assertSame('orders', $data['exchange']);
+        self::assertSame('order.created', $data['queue']);
+        self::assertSame('order.created', $data['routing_key']);
+        self::assertSame('POST', $data['method']);
+    }
 }

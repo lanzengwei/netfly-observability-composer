@@ -39,7 +39,25 @@ final class JsonLogFormatter
             'context' => $this->sanitizer->sanitize($context),
         ];
 
-        foreach (['duration_ms', 'threshold_ms', 'component', 'operation', 'route', 'status', 'exception_class'] as $field) {
+        foreach ([
+            'duration_ms',
+            'threshold_ms',
+            'component',
+            'operation',
+            'route',
+            'status',
+            'exception_class',
+            'span_name',
+            'span_kind',
+            'result',
+            'scenario',
+            'method',
+            'table',
+            'cache_key_type',
+            'exchange',
+            'queue',
+            'routing_key',
+        ] as $field) {
             if (array_key_exists($field, $context)) {
                 $record[$field] = $context[$field];
             }

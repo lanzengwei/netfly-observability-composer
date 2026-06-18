@@ -1,0 +1,22 @@
+{
+  "uid": "netfly-raw-logs",
+  "title": "Netfly Raw Logs",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["netfly", "request-journey"],
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {"list": [
+    {"name": "project", "label": "Project", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total, project)", "refresh": 2, "current": {"text": "demo-shop", "value": "demo-shop"}},
+    {"name": "env", "label": "Env", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\"}, env)", "refresh": 2, "current": {"text": "local", "value": "local"}},
+    {"name": "service", "label": "Service", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\"}, service)", "refresh": 2, "current": {"text": "demo-api", "value": "demo-api"}},
+    {"name": "log_type", "label": "Log Type", "type": "custom", "query": "request,app,db,redis,amqp,slow,error", "includeAll": true, "multi": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "scenario", "label": "Scenario", "type": "custom", "query": "order_create,order_query,payment_callback,inventory_reserve,mixed_traffic,slow_demo,error_demo,message_consume,demo_home", "includeAll": true, "multi": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "trace_id", "label": "Trace ID", "type": "textbox", "query": "", "current": {"text": ".*", "value": ".*"}}
+  ]},
+  "panels": [
+    {"id": 1, "title": "Raw Logs With Parsed Fields", "type": "logs", "gridPos": {"h": 18, "w": 24, "x": 0, "y": 0}, "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"$log_type\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\""}]}
+  ],
+  "links": [{"title": "Netfly dashboards", "type": "dashboards", "tags": ["request-journey"], "asDropdown": true, "includeVars": true, "keepTime": true}]
+}

@@ -36,6 +36,47 @@ final class DependencyCollectorTest extends TestCase
         self::assertStringContainsString('"log_type":"slow"', $log);
     }
 
+    public function test_dependency_logs_are_child_spans_of_current_request_span(): void
+    {
+        [$config, $metrics, $logger, $trace, $path] = $this->dependencies();
+        $trace->setTraceId('trace-db');
+        $trace->startSpan('request-span', null, 'GET /orders', 'server');
+        $collector = new MysqlCollector($config, $metrics, $logger, $trace);
+
+        $collector->record(new DependencyResult('mysql', 'select', ['connection' => 'default', 'database' => 'demo'], 0.02, 'success'));
+
+        $line = strtok((string) file_get_contents($path), "\n");
+        self::assertIsString($line);
+        $data = json_decode($line, true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertSame('trace-db', $data['trace_id']);
+        self::assertNotSame('', $data['span_id']);
+        self::assertNotSame('request-span', $data['span_id']);
+        self::assertSame('request-span', $data['parent_span_id']);
+        self::assertSame('mysql select', $data['span_name']);
+        self::assertSame('client', $data['span_kind']);
+    }
+
+    public function test_slow_dependency_log_reuses_dependency_span(): void
+    {
+        [$config, $metrics, $logger, $trace, $path] = $this->dependencies(['slow_threshold_ms' => ['mysql' => 10]]);
+        $trace->setTraceId('trace-db');
+        $trace->startSpan('request-span', null, 'GET /orders', 'server');
+        $collector = new MysqlCollector($config, $metrics, $logger, $trace);
+
+        $collector->record(new DependencyResult('mysql', 'select', ['connection' => 'default', 'database' => 'demo'], 0.02, 'success'));
+
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents($path))));
+        self::assertCount(2, $lines);
+        $dependency = json_decode($lines[0], true, flags: JSON_THROW_ON_ERROR);
+        $slow = json_decode($lines[1], true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertSame('db', $dependency['log_type']);
+        self::assertSame('slow', $slow['log_type']);
+        self::assertSame($dependency['span_id'], $slow['span_id']);
+        self::assertSame('request-span', $slow['parent_span_id']);
+    }
+
     public function test_redis_collector_records_error_result(): void
     {
         [$config, $metrics, $logger, $trace] = $this->dependencies();

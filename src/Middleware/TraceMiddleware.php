@@ -7,7 +7,9 @@ namespace Netfly\Observability\Middleware;
 use Netfly\Observability\Collector\HttpCollector;
 use Netfly\Observability\Config\ObservabilityConfig;
 use Netfly\Observability\Context\TraceContext;
+use Netfly\Observability\Trace\SpanIdGenerator;
 use Netfly\Observability\Trace\TraceIdGenerator;
+use Netfly\Observability\Trace\TracePropagator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -20,14 +22,25 @@ final class TraceMiddleware implements MiddlewareInterface
         private readonly ObservabilityConfig $config,
         private readonly TraceIdGenerator $traceIdGenerator,
         private readonly TraceContext $traceContext,
-        private readonly HttpCollector $collector
+        private readonly HttpCollector $collector,
+        private readonly ?SpanIdGenerator $spanIdGenerator = null,
+        private readonly ?TracePropagator $tracePropagator = null
     ) {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $traceId = $this->traceIdGenerator->fromHeader($request->getHeaderLine('X-Trace-Id') ?: null);
+        $spanIdGenerator = $this->spanIdGenerator ?? new SpanIdGenerator();
+        $tracePropagator = $this->tracePropagator ?? new TracePropagator($this->config, $this->traceIdGenerator, $spanIdGenerator);
+        $incoming = $tracePropagator->extract($request);
+        $traceId = $incoming->traceId;
         $this->traceContext->setTraceId($traceId);
+        $rootSpan = $this->traceContext->startSpan(
+            $spanIdGenerator->generate(),
+            $incoming->parentSpanId,
+            sprintf('%s %s', strtoupper($request->getMethod()), $this->routeName($request)),
+            'server'
+        );
         $start = microtime(true);
         $status = 500;
 
@@ -35,7 +48,14 @@ final class TraceMiddleware implements MiddlewareInterface
             $response = $handler->handle($request);
             $status = $response->getStatusCode();
 
-            return $response->withHeader('X-Trace-Id', $traceId);
+            $response = $response->withHeader('X-Trace-Id', $traceId);
+            foreach ($tracePropagator->headers($this->traceContext) as $header => $value) {
+                if ($value !== '') {
+                    $response = $response->withHeader($header, $value);
+                }
+            }
+
+            return $response;
         } catch (Throwable $throwable) {
             throw $throwable;
         } finally {
@@ -50,7 +70,7 @@ final class TraceMiddleware implements MiddlewareInterface
                         'uri' => (string) $request->getUri(),
                         'client_ip' => $request->getServerParams()['remote_addr'] ?? null,
                         'user_agent' => $request->getHeaderLine('User-Agent') ?: null,
-                    ]
+                    ] + $rootSpan->toLogContext()
                 );
             }
 

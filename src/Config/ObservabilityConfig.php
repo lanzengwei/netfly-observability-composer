@@ -59,9 +59,75 @@ final class ObservabilityConfig
         return $this->enabled() && (bool) ($this->config['logging']['enabled'] ?? true);
     }
 
+    public function remoteLoggingEnabled(): bool
+    {
+        return $this->loggingEnabled() && (bool) ($this->config['logging']['remote']['enabled'] ?? false);
+    }
+
+    public function remoteLoggingDriver(): string
+    {
+        $driver = strtolower($this->stringValueFromPath(['logging', 'remote', 'driver'], 'tcp'));
+
+        return in_array($driver, ['tcp', 'http'], true) ? $driver : 'tcp';
+    }
+
+    public function remoteLoggingHost(): string
+    {
+        return $this->stringValueFromPath(['logging', 'remote', 'host'], '127.0.0.1');
+    }
+
+    public function remoteLoggingPort(): int
+    {
+        return max(1, (int) ($this->config['logging']['remote']['port'] ?? 9000));
+    }
+
+    public function remoteLoggingUrl(): string
+    {
+        return $this->stringValueFromPath(['logging', 'remote', 'url'], 'http://127.0.0.1:9000/logs');
+    }
+
+    public function remoteLoggingTimeoutMs(): int
+    {
+        return max(1, (int) ($this->config['logging']['remote']['timeout_ms'] ?? 50));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function remoteLoggingHeaders(): array
+    {
+        $headers = $this->config['logging']['remote']['headers'] ?? [];
+        if (! is_array($headers)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($headers as $name => $value) {
+            if (is_string($name) && is_scalar($value)) {
+                $normalized[$name] = (string) $value;
+            }
+        }
+
+        return $normalized;
+    }
+
     public function collectorEnabled(string $name): bool
     {
         return $this->enabled() && (bool) ($this->config[$name]['enabled'] ?? true);
+    }
+
+    /**
+     * @return array{trace_id: string, span_id: string, parent_span_id: string}
+     */
+    public function traceHeaders(): array
+    {
+        $headers = $this->config['trace']['headers'] ?? [];
+
+        return [
+            'trace_id' => is_scalar($headers['trace_id'] ?? null) ? (string) $headers['trace_id'] : 'X-Netfly-Trace-Id',
+            'span_id' => is_scalar($headers['span_id'] ?? null) ? (string) $headers['span_id'] : 'X-Netfly-Span-Id',
+            'parent_span_id' => is_scalar($headers['parent_span_id'] ?? null) ? (string) $headers['parent_span_id'] : 'X-Netfly-Parent-Span-Id',
+        ];
     }
 
     public function slowThresholdMs(string $name): int
@@ -95,9 +161,25 @@ final class ObservabilityConfig
                 'enabled' => true,
                 'path' => '/metrics',
             ],
+            'trace' => [
+                'headers' => [
+                    'trace_id' => 'X-Netfly-Trace-Id',
+                    'span_id' => 'X-Netfly-Span-Id',
+                    'parent_span_id' => 'X-Netfly-Parent-Span-Id',
+                ],
+            ],
             'logging' => [
                 'enabled' => true,
                 'path' => $this->basePath() . '/runtime/logs/netfly-observability.log',
+                'remote' => [
+                    'enabled' => false,
+                    'driver' => 'tcp',
+                    'host' => '127.0.0.1',
+                    'port' => 9000,
+                    'url' => 'http://127.0.0.1:9000/logs',
+                    'timeout_ms' => 50,
+                    'headers' => [],
+                ],
             ],
             'http' => ['enabled' => true],
             'mysql' => ['enabled' => true],
@@ -115,6 +197,23 @@ final class ObservabilityConfig
     private function stringValue(string $key, string $default): string
     {
         $value = $this->config[$key] ?? $default;
+
+        return is_scalar($value) ? (string) $value : $default;
+    }
+
+    /**
+     * @param list<string> $path
+     */
+    private function stringValueFromPath(array $path, string $default): string
+    {
+        $value = $this->config;
+        foreach ($path as $segment) {
+            if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                return $default;
+            }
+
+            $value = $value[$segment];
+        }
 
         return is_scalar($value) ? (string) $value : $default;
     }
