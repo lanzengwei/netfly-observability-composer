@@ -1,0 +1,105 @@
+{
+  "uid": "netfly-visual-dependency-map",
+  "title": "Netfly Visual Dependency Map",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["netfly", "visual-map", "dependencies"],
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {"list": [
+    {"name": "project", "label": "Project", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total, project)", "refresh": 2, "current": {"text": "demo-shop", "value": "demo-shop"}},
+    {"name": "env", "label": "Env", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\"}, env)", "refresh": 2, "current": {"text": "local", "value": "local"}},
+    {"name": "service", "label": "Service", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\"}, service)", "refresh": 2, "current": {"text": "demo-api", "value": "demo-api"}},
+    {"name": "scenario", "label": "Scenario", "type": "custom", "query": "order_create,order_query,payment_callback,inventory_reserve,mixed_traffic,slow_demo,error_demo,message_consume,demo_home", "includeAll": true, "multi": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "trace_id", "label": "Trace ID", "type": "textbox", "query": "", "current": {"text": ".*", "value": ".*"}}
+  ]},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Dependency Topology",
+      "type": "text",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "### Component map\n\n`demo-api` -> `MySQL orders`  |  `demo-api` -> `Redis order/cache/stock`  |  `demo-api` -> `RabbitMQ order events`\n\nThis visual folder separates dependency topology from the operational dashboards. Use it when you want to quickly answer: which dependency is hot, which is slow, and which trace produced the call."
+      }
+    },
+    {
+      "id": 2,
+      "title": "MySQL Rate",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 4, "x": 0, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "ops", "color": {"mode": "palette-classic"}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "colorMode": "background", "graphMode": "area"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum(rate(netfly_db_queries_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "mysql"}]
+    },
+    {
+      "id": 3,
+      "title": "Redis Rate",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 4, "x": 4, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "ops", "color": {"mode": "palette-classic"}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "colorMode": "background", "graphMode": "area"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum(rate(netfly_redis_commands_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "redis"}]
+    },
+    {
+      "id": 4,
+      "title": "RabbitMQ Rate",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 4, "x": 8, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "ops", "color": {"mode": "palette-classic"}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "colorMode": "background", "graphMode": "area"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum(rate(netfly_amqp_publish_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) + sum(rate(netfly_amqp_consume_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "rabbitmq"}]
+    },
+    {
+      "id": 5,
+      "title": "Dependency P95 Rank",
+      "type": "bargauge",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.1}, {"color": "red", "value": 0.3}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_db_query_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "mysql"},
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_redis_command_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "redis"},
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_amqp_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "rabbitmq"}
+      ]
+    },
+    {
+      "id": 6,
+      "title": "MySQL Operations",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 11},
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"drawStyle": "bars", "fillOpacity": 35, "lineWidth": 1}}, "overrides": []},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum by (operation) (rate(netfly_db_queries_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "{{operation}}"}]
+    },
+    {
+      "id": 7,
+      "title": "Redis Commands",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"drawStyle": "bars", "fillOpacity": 35, "lineWidth": 1}}, "overrides": []},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum by (command) (rate(netfly_redis_commands_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "{{command}}"}]
+    },
+    {
+      "id": 8,
+      "title": "RabbitMQ Queues",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
+      "fieldConfig": {"defaults": {"unit": "ops", "custom": {"drawStyle": "bars", "fillOpacity": 35, "lineWidth": 1}}, "overrides": []},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum by (queue) (rate(netfly_amqp_publish_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "pub {{queue}}"},
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum by (queue) (rate(netfly_amqp_consume_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "consume {{queue}}"}
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Dependency Event Stream",
+      "type": "logs",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 24},
+      "options": {"showTime": true, "showLabels": false, "wrapLogMessage": false, "sortOrder": "Descending"},
+      "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"db|redis|amqp|slow|error\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | line_format \"{{.component}} | {{.scenario}} | {{.operation}} | {{.duration_ms}}ms | {{.result}} | trace={{.trace_id}} | span={{.span_id}}\""}]
+    }
+  ],
+  "links": [{"title": "Open Netfly dashboards", "type": "dashboards", "tags": ["netfly"], "asDropdown": true, "includeVars": true, "keepTime": true}]
+}

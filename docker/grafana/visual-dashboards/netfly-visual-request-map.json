@@ -1,0 +1,96 @@
+{
+  "uid": "netfly-visual-request-map",
+  "title": "Netfly Visual Request Map",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "tags": ["netfly", "visual-map", "request-journey"],
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {"list": [
+    {"name": "project", "label": "Project", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total, project)", "refresh": 2, "current": {"text": "demo-shop", "value": "demo-shop"}},
+    {"name": "env", "label": "Env", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\"}, env)", "refresh": 2, "current": {"text": "local", "value": "local"}},
+    {"name": "service", "label": "Service", "type": "query", "datasource": {"type": "prometheus", "uid": "Prometheus"}, "query": "label_values(netfly_http_requests_total{project=\"$project\",env=\"$env\"}, service)", "refresh": 2, "current": {"text": "demo-api", "value": "demo-api"}},
+    {"name": "scenario", "label": "Scenario", "type": "custom", "query": "order_create,order_query,payment_callback,inventory_reserve,mixed_traffic,slow_demo,error_demo,message_consume,demo_home", "includeAll": true, "multi": true, "current": {"text": "All", "value": "$__all"}},
+    {"name": "trace_id", "label": "Trace ID", "type": "textbox", "query": "", "current": {"text": ".*", "value": ".*"}}
+  ]},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Journey Map",
+      "type": "text",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "### Request flow\n\n`HTTP entry` -> `App scenario` -> `MySQL` / `Redis` / `RabbitMQ` -> `Structured logs` + `Prometheus metrics`\n\nUse the variables above to filter by project, environment, service, scenario, or a specific `trace_id`. The panels below keep the visual overview, component latency, and raw trace events together so a request can be followed without jumping across dashboards."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Request Rate",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "reqps", "color": {"mode": "palette-classic"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 5}, {"color": "red", "value": 20}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "area", "justifyMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum(rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "requests"}]
+    },
+    {
+      "id": 3,
+      "title": "HTTP P95",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "s", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.3}, {"color": "red", "value": 1}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "area", "justifyMode": "auto"},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_http_request_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "p95"}]
+    },
+    {
+      "id": 4,
+      "title": "Slow Events",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}, {"color": "red", "value": 5}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none", "justifyMode": "auto"},
+      "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "sum(count_over_time({project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"slow\"} | json | scenario=~\"$scenario\" [5m]))", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "Error Events",
+      "type": "stat",
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 6},
+      "fieldConfig": {"defaults": {"unit": "short", "color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 1}, {"color": "red", "value": 3}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "auto", "textMode": "auto", "colorMode": "background", "graphMode": "none", "justifyMode": "auto"},
+      "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "sum(count_over_time({project=\"$project\",env=\"$env\",service=\"$service\",log_type=\"error\"} | json | scenario=~\"$scenario\" [5m]))", "refId": "A"}]
+    },
+    {
+      "id": 6,
+      "title": "Component Latency Lanes",
+      "type": "timeseries",
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 11},
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 12, "showPoints": "never"}}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"]}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_db_query_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "mysql p95"},
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_redis_command_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "redis p95"},
+        {"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "histogram_quantile(0.95, sum(rate(netfly_amqp_duration_seconds_bucket{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval])) by (le))", "legendFormat": "rabbitmq p95"}
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Scenario Flow",
+      "type": "bargauge",
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 11},
+      "fieldConfig": {"defaults": {"unit": "reqps", "color": {"mode": "palette-classic"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
+      "options": {"reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""}, "orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "targets": [{"datasource": {"type": "prometheus", "uid": "Prometheus"}, "expr": "sum by (scenario) (rate(netfly_http_requests_total{project=\"$project\",env=\"$env\",service=\"$service\"}[$__rate_interval]))", "legendFormat": "{{scenario}}"}]
+    },
+    {
+      "id": 8,
+      "title": "Trace Timeline",
+      "type": "logs",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 20},
+      "options": {"showTime": true, "showLabels": false, "wrapLogMessage": false, "sortOrder": "Ascending"},
+      "targets": [{"datasource": {"type": "loki", "uid": "Loki"}, "expr": "{project=\"$project\",env=\"$env\",service=\"$service\",log_type=~\"request|app|db|redis|amqp|slow|error\"} | json | scenario=~\"$scenario\" | trace_id=~\"$trace_id\" | line_format \"{{.scenario}} | {{.span_id}} <- {{.parent_span_id}} | {{.component}} {{.operation}} | {{.duration_ms}}ms | {{.result}} | {{.message}}\""}]
+    }
+  ],
+  "links": [{"title": "Open Netfly dashboards", "type": "dashboards", "tags": ["netfly"], "asDropdown": true, "includeVars": true, "keepTime": true}]
+}

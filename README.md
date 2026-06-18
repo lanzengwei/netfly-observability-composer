@@ -293,6 +293,32 @@ docker compose exec demo-api tail -f /app/demo/runtime/logs/netfly-observability
 
 旧的 HTTP、Runtime、Logs & Trace 仪表盘已经删除。
 
+另外新增了一组更偏图谱化的美观 dashboard，单独放在 `docker/grafana/visual-dashboards/`，并在当前 Docker Compose 中挂载到 Grafana：
+
+| 图谱 | 文件 | 用途 |
+|------|------|------|
+| Netfly Visual Request Map | `netfly-visual-request-map.json` | 用请求流转图、关键指标卡、组件延迟和 trace 时间线集中查看一次请求 |
+| Netfly Visual Dependency Map | `netfly-visual-dependency-map.json` | 把 MySQL、Redis、RabbitMQ 分成依赖泳道，查看调用量、P95 和事件流 |
+
+这组图谱会出现在 Grafana 的 `Netfly Visual` 文件夹。启动或刷新方式：
+
+```bash
+docker compose up -d --build
+```
+
+如果 Grafana 已经在运行，修改图谱后可以等待 10 秒自动扫描，或手动重启 Grafana：
+
+```bash
+docker compose restart grafana
+```
+
+使用建议：
+
+1. 先访问 `http://localhost:19501/demo/traffic` 生成真实 MySQL、Redis、RabbitMQ 流量。
+2. 打开 `http://localhost:13000`，进入 `Netfly Visual` 文件夹。
+3. 先看 `Netfly Visual Request Map` 找到请求、慢操作和 `trace_id`。
+4. 再用同一个 `trace_id` 打开 `Netfly Visual Dependency Map`，分开查看 MySQL、Redis、RabbitMQ 调用。
+
 ## 开发验证
 
 本机已安装依赖时：

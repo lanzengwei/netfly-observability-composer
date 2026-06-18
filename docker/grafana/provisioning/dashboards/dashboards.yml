@@ -10,3 +10,12 @@ providers:
     allowUiUpdates: true
     options:
       path: /var/lib/grafana/dashboards
+  - name: Netfly Visual Maps
+    orgId: 1
+    folder: Netfly Visual
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/visual-dashboards

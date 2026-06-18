@@ -45,6 +45,33 @@ final class GrafanaDashboardStructureTest extends TestCase
         self::assertStringContainsString('log_type=\"amqp\"', $rabbitmq);
     }
 
+    public function test_visual_dashboard_directory_is_loaded_as_separate_folder(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $visualDir = $root . '/docker/grafana/visual-dashboards';
+        $files = array_map('basename', glob($visualDir . '/*.json') ?: []);
+        sort($files);
+
+        self::assertSame([
+            'netfly-visual-dependency-map.json',
+            'netfly-visual-request-map.json',
+        ], $files);
+
+        $provider = (string) file_get_contents($root . '/docker/grafana/provisioning/dashboards/dashboards.yml');
+        $compose = (string) file_get_contents($root . '/docker-compose.yml');
+        $requestMap = (string) file_get_contents($visualDir . '/netfly-visual-request-map.json');
+        $dependencyMap = (string) file_get_contents($visualDir . '/netfly-visual-dependency-map.json');
+
+        self::assertStringContainsString('Netfly Visual Maps', $provider);
+        self::assertStringContainsString('folder: Netfly Visual', $provider);
+        self::assertStringContainsString('/var/lib/grafana/visual-dashboards', $provider);
+        self::assertStringContainsString('./docker/grafana/visual-dashboards:/var/lib/grafana/visual-dashboards:ro', $compose);
+        self::assertStringContainsString('"title": "Netfly Visual Request Map"', $requestMap);
+        self::assertStringContainsString('"title": "Netfly Visual Dependency Map"', $dependencyMap);
+        self::assertStringContainsString('Trace Timeline', $requestMap);
+        self::assertStringContainsString('Dependency Topology', $dependencyMap);
+    }
+
     public function test_promtail_extracts_scenario_and_component_labels(): void
     {
         $promtail = (string) file_get_contents(dirname(__DIR__, 2) . '/docker/promtail/promtail.yml');
