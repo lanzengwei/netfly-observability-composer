@@ -64,6 +64,25 @@ final class ObservabilityConfig
         return $this->enabled() && (bool) ($this->config[$name]['enabled'] ?? true);
     }
 
+    public function traceEnabled(): bool
+    {
+        return $this->enabled() && (bool) ($this->config['trace']['enabled'] ?? true);
+    }
+
+    /**
+     * @return array{trace_id: string, span_id: string, parent_span_id: string}
+     */
+    public function traceHeaders(): array
+    {
+        $headers = $this->config['trace']['headers'] ?? [];
+
+        return [
+            'trace_id' => is_scalar($headers['trace_id'] ?? null) ? (string) $headers['trace_id'] : 'X-Netfly-Trace-Id',
+            'span_id' => is_scalar($headers['span_id'] ?? null) ? (string) $headers['span_id'] : 'X-Netfly-Span-Id',
+            'parent_span_id' => is_scalar($headers['parent_span_id'] ?? null) ? (string) $headers['parent_span_id'] : 'X-Netfly-Parent-Span-Id',
+        ];
+    }
+
     public function slowThresholdMs(string $name): int
     {
         return (int) ($this->config['slow_threshold_ms'][$name] ?? 0);
@@ -94,6 +113,14 @@ final class ObservabilityConfig
             'metrics' => [
                 'enabled' => true,
                 'path' => '/metrics',
+            ],
+            'trace' => [
+                'enabled' => true,
+                'headers' => [
+                    'trace_id' => 'X-Netfly-Trace-Id',
+                    'span_id' => 'X-Netfly-Span-Id',
+                    'parent_span_id' => 'X-Netfly-Parent-Span-Id',
+                ],
             ],
             'logging' => [
                 'enabled' => true,

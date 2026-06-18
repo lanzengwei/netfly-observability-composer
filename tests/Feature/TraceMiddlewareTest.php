@@ -58,6 +58,48 @@ final class TraceMiddlewareTest extends TestCase
         @unlink($logPath);
     }
 
+    public function test_custom_trace_headers_create_root_span_in_response_and_log(): void
+    {
+        $logPath = sys_get_temp_dir() . '/netfly-http-span-' . bin2hex(random_bytes(4)) . '.log';
+        $config = new ObservabilityConfig([
+            'project' => 'shop',
+            'env' => 'test',
+            'service' => 'api',
+            'logging' => ['path' => $logPath],
+        ]);
+        $metrics = new MetricsRegistry($config->identityLabels());
+        $logger = new ObservabilityLogger($config, new JsonLogFormatter($config->identityLabels()));
+        $traceContext = new TraceContext();
+        $collector = new HttpCollector($config, $metrics, $logger);
+        $middleware = new TraceMiddleware($config, new TraceIdGenerator(), $traceContext, $collector);
+
+        $response = $middleware->process(
+            (new ServerRequest('GET', '/orders/1'))
+                ->withHeader('X-Netfly-Trace-Id', 'trace-custom-123')
+                ->withHeader('X-Netfly-Span-Id', 'upstream-span-1'),
+            new class implements RequestHandlerInterface {
+                public function handle(ServerRequestInterface $request): ResponseInterface
+                {
+                    return new Response(200);
+                }
+            }
+        );
+
+        $log = (string) file_get_contents($logPath);
+        $data = json_decode(trim($log), true, flags: JSON_THROW_ON_ERROR);
+
+        self::assertSame('trace-custom-123', $response->getHeaderLine('X-Netfly-Trace-Id'));
+        self::assertNotSame('', $response->getHeaderLine('X-Netfly-Span-Id'));
+        self::assertSame('upstream-span-1', $response->getHeaderLine('X-Netfly-Parent-Span-Id'));
+        self::assertSame('trace-custom-123', $data['trace_id']);
+        self::assertSame($response->getHeaderLine('X-Netfly-Span-Id'), $data['span_id']);
+        self::assertSame('upstream-span-1', $data['parent_span_id']);
+        self::assertSame('GET /orders/1', $data['span_name']);
+        self::assertSame('server', $data['span_kind']);
+
+        @unlink($logPath);
+    }
+
     public function test_disabled_http_collector_only_propagates_trace_header(): void
     {
         $config = new ObservabilityConfig([
