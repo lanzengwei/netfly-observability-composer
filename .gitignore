@@ -1,4 +1,6 @@
 .superpowers/
+.idea/
+docs/superpowers/
 vendor/
 demo/vendor/
 composer.lock

@@ -19,14 +19,12 @@ final class TracePropagatorTest extends TestCase
         $propagator = new TracePropagator(new ObservabilityConfig(), new TraceIdGenerator(), new SpanIdGenerator());
         $request = (new ServerRequest('GET', '/orders'))
             ->withHeader('X-Netfly-Trace-Id', 'trace-custom-123')
-            ->withHeader('X-Netfly-Span-Id', 'upstream-span-1')
-            ->withHeader('X-Netfly-Parent-Span-Id', 'upstream-root');
+            ->withHeader('X-Netfly-Span-Id', 'upstream-span-1');
 
         $incoming = $propagator->extract($request);
 
         self::assertSame('trace-custom-123', $incoming->traceId);
         self::assertSame('upstream-span-1', $incoming->parentSpanId);
-        self::assertSame('upstream-root', $incoming->remoteParentSpanId);
     }
 
     public function test_builds_outgoing_headers_from_current_context(): void

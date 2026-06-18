@@ -62,4 +62,29 @@ final class ObservabilityConfigTest extends TestCase
         self::assertSame(250, $config->slowThresholdMs('mysql'));
         self::assertSame(0, $config->slowThresholdMs('missing'));
     }
+
+    public function test_remote_logging_configuration_is_read(): void
+    {
+        $config = new ObservabilityConfig([
+            'logging' => [
+                'remote' => [
+                    'enabled' => true,
+                    'driver' => 'http',
+                    'host' => '10.0.0.8',
+                    'port' => 19000,
+                    'url' => 'http://10.0.0.8:19000/logs',
+                    'timeout_ms' => 75,
+                    'headers' => ['X-Token' => 'abc'],
+                ],
+            ],
+        ]);
+
+        self::assertTrue($config->remoteLoggingEnabled());
+        self::assertSame('http', $config->remoteLoggingDriver());
+        self::assertSame('10.0.0.8', $config->remoteLoggingHost());
+        self::assertSame(19000, $config->remoteLoggingPort());
+        self::assertSame('http://10.0.0.8:19000/logs', $config->remoteLoggingUrl());
+        self::assertSame(75, $config->remoteLoggingTimeoutMs());
+        self::assertSame(['X-Token' => 'abc'], $config->remoteLoggingHeaders());
+    }
 }

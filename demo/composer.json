@@ -8,7 +8,10 @@
       "type": "path",
       "url": "../",
       "options": {
-        "symlink": true
+        "symlink": true,
+        "versions": {
+          "netfly/observability": "dev-master"
+        }
       }
     }
   ],
@@ -17,7 +20,7 @@
     "hyperf/framework": "^3.1",
     "hyperf/http-server": "^3.1",
     "hyperf/process": "^3.1",
-    "netfly/observability": "dev-feature/netfly-observability"
+    "netfly/observability": "dev-master"
   },
   "autoload": {
     "psr-4": {

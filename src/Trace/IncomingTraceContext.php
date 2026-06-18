@@ -8,8 +8,7 @@ final class IncomingTraceContext
 {
     public function __construct(
         public readonly string $traceId,
-        public readonly ?string $parentSpanId = null,
-        public readonly ?string $remoteParentSpanId = null
+        public readonly ?string $parentSpanId = null
     ) {
     }
 }

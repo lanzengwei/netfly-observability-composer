@@ -37,4 +37,9 @@ final class RabbitMqCollector extends AbstractDependencyCollector
             'result' => $result->result,
         ]);
     }
+
+    protected function spanKind(DependencyResult $result): string
+    {
+        return strtolower($result->operation) === 'consume' ? 'consumer' : 'producer';
+    }
 }

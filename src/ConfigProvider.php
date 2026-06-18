@@ -15,10 +15,13 @@ use Netfly\Observability\Controller\MetricsController;
 use Netfly\Observability\Logging\JsonLogFormatter;
 use Netfly\Observability\Logging\LogSanitizer;
 use Netfly\Observability\Logging\ObservabilityLogger;
+use Netfly\Observability\Logging\RemoteLogSender;
 use Netfly\Observability\Metrics\MetricsRegistry;
 use Netfly\Observability\Metrics\PrometheusRenderer;
 use Netfly\Observability\Middleware\TraceMiddleware;
+use Netfly\Observability\Trace\SpanIdGenerator;
 use Netfly\Observability\Trace\TraceIdGenerator;
+use Netfly\Observability\Trace\TracePropagator;
 
 final class ConfigProvider
 {
@@ -31,10 +34,13 @@ final class ConfigProvider
             'dependencies' => [
                 ObservabilityConfig::class => ObservabilityConfig::class,
                 TraceIdGenerator::class => TraceIdGenerator::class,
+                SpanIdGenerator::class => SpanIdGenerator::class,
+                TracePropagator::class => TracePropagator::class,
                 TraceContext::class => TraceContext::class,
                 LogSanitizer::class => LogSanitizer::class,
                 JsonLogFormatter::class => JsonLogFormatter::class,
                 ObservabilityLogger::class => ObservabilityLogger::class,
+                RemoteLogSender::class => RemoteLogSender::class,
                 MetricsRegistry::class => MetricsRegistry::class,
                 PrometheusRenderer::class => PrometheusRenderer::class,
                 HttpCollector::class => HttpCollector::class,

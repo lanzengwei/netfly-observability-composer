@@ -1,0 +1,15 @@
+.git/
+.idea/
+.superpowers/
+vendor/
+demo/vendor/
+runtime/
+demo/runtime/
+logs/
+demo/logs/
+.phpunit.cache/
+.phpstan.cache/
+.php-cs-fixer.cache
+.env
+demo/.env
+docs/superpowers/

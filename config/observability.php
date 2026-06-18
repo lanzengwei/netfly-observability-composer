@@ -11,9 +11,25 @@ return [
         'enabled' => (bool) env('NETFLY_OBSERVABILITY_METRICS_ENABLED', true),
         'path' => env('NETFLY_OBSERVABILITY_METRICS_PATH', '/metrics'),
     ],
+    'trace' => [
+        'headers' => [
+            'trace_id' => env('NETFLY_OBSERVABILITY_TRACE_HEADER', 'X-Netfly-Trace-Id'),
+            'span_id' => env('NETFLY_OBSERVABILITY_SPAN_HEADER', 'X-Netfly-Span-Id'),
+            'parent_span_id' => env('NETFLY_OBSERVABILITY_PARENT_SPAN_HEADER', 'X-Netfly-Parent-Span-Id'),
+        ],
+    ],
     'logging' => [
         'enabled' => (bool) env('NETFLY_OBSERVABILITY_LOGGING_ENABLED', true),
         'path' => env('NETFLY_OBSERVABILITY_LOG_PATH', BASE_PATH . '/runtime/logs/netfly-observability.log'),
+        'remote' => [
+            'enabled' => (bool) env('NETFLY_OBSERVABILITY_REMOTE_LOG_ENABLED', false),
+            'driver' => env('NETFLY_OBSERVABILITY_REMOTE_LOG_DRIVER', 'tcp'),
+            'host' => env('NETFLY_OBSERVABILITY_REMOTE_LOG_HOST', '127.0.0.1'),
+            'port' => (int) env('NETFLY_OBSERVABILITY_REMOTE_LOG_PORT', 9000),
+            'url' => env('NETFLY_OBSERVABILITY_REMOTE_LOG_URL', 'http://127.0.0.1:9000/logs'),
+            'timeout_ms' => (int) env('NETFLY_OBSERVABILITY_REMOTE_LOG_TIMEOUT_MS', 50),
+            'headers' => [],
+        ],
     ],
     'http' => ['enabled' => (bool) env('NETFLY_OBSERVABILITY_HTTP_ENABLED', true)],
     'mysql' => ['enabled' => (bool) env('NETFLY_OBSERVABILITY_MYSQL_ENABLED', true)],

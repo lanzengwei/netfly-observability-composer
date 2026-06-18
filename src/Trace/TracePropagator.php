@@ -22,12 +22,10 @@ final class TracePropagator
         $headers = $this->config->traceHeaders();
         $traceHeader = $request->getHeaderLine($headers['trace_id']) ?: $request->getHeaderLine('X-Trace-Id');
         $parentSpanId = $request->getHeaderLine($headers['span_id']) ?: null;
-        $remoteParentSpanId = $request->getHeaderLine($headers['parent_span_id']) ?: null;
 
         return new IncomingTraceContext(
             $this->traceIdGenerator->fromHeader($traceHeader ?: null),
-            $this->spanIdGenerator->isValid($parentSpanId) ? $parentSpanId : null,
-            $this->spanIdGenerator->isValid($remoteParentSpanId) ? $remoteParentSpanId : null
+            $this->spanIdGenerator->isValid($parentSpanId) ? $parentSpanId : null
         );
     }
 

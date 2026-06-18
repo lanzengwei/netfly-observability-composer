@@ -74,7 +74,7 @@ final class TraceContext
             return null;
         }
 
-        return $stack[array_key_last($stack)];
+        return $stack[count($stack) - 1];
     }
 
     public function endSpan(?string $spanId = null): void
@@ -85,7 +85,8 @@ final class TraceContext
             return;
         }
 
-        if ($spanId === null || end($stack)->spanId === $spanId) {
+        $last = $stack[count($stack) - 1];
+        if ($spanId === null || $last->spanId === $spanId) {
             array_pop($stack);
             $this->setSpanStack($stack);
             return;
